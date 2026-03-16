@@ -57,7 +57,7 @@
 
 // ─── Panel geometry ────────────────────────────────────────────────────────
 #define PANEL_WIDTH   64
-#define PANEL_HEIGHT  32
+#define PANEL_HEIGHT  64
 #define PANEL_CHAIN    1
  
 MatrixPanel_I2S_DMA *matrix = nullptr;
@@ -240,7 +240,7 @@ void setup() {
     // JHT3.0 / standard shift-register panels with E pin need this driver.
     // SHIFTREG_ABC_BIN_DE enables the 5th address bit (E) for 1/32 scan.
     // If the panel still shows only the top half, try FM6126A instead.
-    mxconfig.driver = HUB75_I2S_CFG::ICN2038S;
+    mxconfig.driver = HUB75_I2S_CFG::SHIFTREG;
  
     // 74HC04D on the panel inverts OE; library drives active-low,
     // inverter restores correct polarity — no extra config needed.
