@@ -19,20 +19,20 @@ A PlatformIO / Arduino test firmware for the **P4-2121-64×32-32S-JHT3.0** HUB75
 
 | HUB75E Signal | GPIO | Notes |
 |---|---|---|
-| R1 | 4 | |
-| G1 | 5 | |
-| B1 | 12 | |
-| R2 | 13 | |
-| G2 | 14 | |
-| B2 | 15 | |
-| A | 38 | |
-| B | 39 | |
-| C | 40 | |
-| D | 41 | |
+| R1 | 4 | RED data for upper half of the panel |
+| G1 | 5 | GREEN data for upper half of the panel |
+| B1 | 12 | BLUE data for upper half of the panel |
+| R2 | 13 | RED data for lower half of the panel |
+| G2 | 14 | GREEN data for lower half of the panel |
+| B2 | 15 | BLUE data for lower half of the panel |
+| A | 38 | Address pin A |
+| B | 39 | Address pin B |
+| C | 40 | Address pin C |
+| D | 41 | Address pin D |
 | **E** | **42** | Required for 1/32 scan |
-| CLK | 2 | |
-| LAT | 1 | |
-| OE | 16 | |
+| CLK | 2 | Clock pin |
+| LAT | 1 | Latch pin |
+| OE | 16 | Controls brightness (Output Enable pin) |
 
 ### ESP32-S3-N16R8 GPIO rules
 
