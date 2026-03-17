@@ -175,24 +175,30 @@ void testCheckerboard() {
 
 // ─── Test 6: Scrolling text ────────────────────────────────────────────────
 void testScrollText() {
-    Serial.println("[6] Scroll text");
-    const char *msg  = "  HUB75E OK  P4-64x32  ESP32-S3  ";
-    int msgPixelLen  = strlen(msg) * 6;   // font-1 = 6px/char
-    int startX       = PANEL_WIDTH;
-    int endX         = -msgPixelLen;
-    // Centre text vertically in the physical 32-row panel
-    int textY        = (REAL_HEIGHT - 8) / 2;   // 8px tall at size 1
-
-    for (int pass = 0; pass < SCROLL_PASSES; pass++) {
-        for (int xpos = startX; xpos > endX; xpos--) {
-            matrix->fillRect(0, 0, PANEL_WIDTH, REAL_HEIGHT, C(0, 0, 0));
-            matrix->setTextColor(C(0, 255, 80));
-            matrix->setTextSize(1);
-            matrix->setCursor(xpos, textY);
-            matrix->print(msg);
-            delay(18);
+        Serial.println("[6] Scroll text");
+        
+        const char *msg = "  HUB75E OK  P4-64x32  ESP32-S3  ";
+        
+        int16_t x1, y1;
+        uint16_t w, h;    
+        matrix->getTextBounds(msg, 0, 0, &x1, &y1, &w, &h);        
+        int startX = PANEL_WIDTH;
+        int endX   = -w;
+        int textY  = (REAL_HEIGHT - h) / 2;
+        matrix->setTextColor(C(0, 255, 80));
+        matrix->setTextSize(1);
+        
+        for (int pass = 0; pass < SCROLL_PASSES; pass++) {
+                for (int xpos = startX; xpos > endX; xpos--) {
+                    
+                    matrix->clearScreen();   
+                    matrix->setCursor(xpos, textY); 
+                    matrix->print(msg);                     
+                    matrix->flipDMABuffer(); // important if using DMA
+                    
+                    delay(40); // Higher the value = slower the scroll. Lower the value = faster the scroll
         }
-    }
+    }   
 }
 
 // ─── Test 7: Border / corners ─────────────────────────────────────────────
