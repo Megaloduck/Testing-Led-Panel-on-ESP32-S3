@@ -1,206 +1,152 @@
-📟 HUB75E Panel Test — ESP32-S3 (P4 64×32)
+# HUB75E Panel Test — ESP32-S3-N16R8
 
-A comprehensive hardware validation and diagnostic suite for HUB75E RGB LED matrix panels using the ESP32-S3 and DMA-based driving.
+A PlatformIO / Arduino test firmware for the **P4-2121-64×32-32S-JHT3.0** HUB75E LED matrix panel driven by an **ESP32-S3-N16R8** (16 MB flash, 8 MB octal PSRAM).
 
-Designed specifically for:
+---
 
-P4-2121-64x32-32S-JHT3.0
+## Hardware
 
-1/32 scan HUB75E panels
+| Item | Details |
+|---|---|
+| MCU board | ESP32-S3-DevKitC-1 (N16R8) |
+| Panel | P4-2121-64×32, 1/32 scan, HUB75E connector |
+| Scan type | 1/32 (5-bit row address — A B C D **E**) |
+| Library | [ESP32-HUB75-MatrixPanel-I2S-DMA](https://github.com/mrcodetastic/ESP32-HUB75-MatrixPanel-DMA) v3.x |
 
-ESP32-S3-N16R8 (16MB Flash + 8MB PSRAM)
+---
 
-🎯 Features
+## Wiring
 
-✅ Full HUB75E signal validation (R1/G1/B1, R2/G2/B2, A–E, CLK, LAT, OE)
+| HUB75E Signal | GPIO | Notes |
+|---|---|---|
+| R1 | 4 | |
+| G1 | 5 | |
+| B1 | 12 | |
+| R2 | 13 | |
+| G2 | 14 | |
+| B2 | 15 | |
+| A | 38 | |
+| B | 39 | |
+| C | 40 | |
+| D | 41 | |
+| **E** | **42** | Required for 1/32 scan |
+| CLK | 2 | |
+| LAT | 1 | |
+| OE | 16 | |
 
-✅ 8 visual diagnostic tests
+### ESP32-S3-N16R8 GPIO rules
 
-✅ DMA-driven rendering (high refresh, low flicker)
+| Range | Status |
+|---|---|
+| 0, 3, 45, 46 | ⚠️ Strapping pins — avoid |
+| 6 – 11 | ⛔ Internal QSPI flash |
+| 35, 36, 37 | ⛔ Octal PSRAM/flash (N16R8 specific) |
+| 48 | ⚠️ Connected to on-board RGB LED on many DevKitC-1 boards |
+| 1–2, 4–5, 12–21, 26–34, 38–47 | ✅ Safe for general use |
 
-✅ Safe GPIO mapping for ESP32-S3
+---
 
-✅ Compatible with SHIFTREG-based panels (no init sequence required)
+## Key Configuration Notes
 
-🧠 Architecture Overview
+### Why `PANEL_HEIGHT = 64` for a 32-row panel
 
-This project uses:
+This panel uses **1/32 scan**, meaning it needs a 5-bit row address (A–E). The library only drives the E pin when the virtual canvas height is ≥ 64. Configuring the library as `64×64` is the standard workaround — the physical panel only uses rows `0–31` of that virtual canvas.
 
-DMA parallel output via I2S
+All drawing in the test functions is explicitly clipped to `REAL_HEIGHT = 32`.
 
-Virtual canvas workaround (64×64) for 1/32 scan panels
+### Driver choice
 
-Clipped rendering to physical rows (0–31)
+`HUB75_I2S_CFG::SHIFTREG` is used (plain shift-register, no init sequence). The `ICN2038S` and `FM6126A` drivers send a chip-specific initialisation sequence on startup that this panel's actual shift-register IC ignores or misinterprets, which can corrupt the scan output.
 
-Why 64×64?
+---
 
-HUB75E panels require 5-bit row addressing (A–E).
+## Project Structure
 
-The library internally enables this only when height ≥ 64, so:
+```
+├── src/
+│   └── main.cpp        — All test patterns and setup
+├── include/            — (empty, reserved for headers)
+├── lib/                — (empty, reserved for private libs)
+├── test/               — (empty, reserved for unit tests)
+└── platformio.ini      — Build configuration
+```
 
-Virtual: 64×64
-Physical: 64×32
+---
 
-Only the top half (0–31) maps to real LEDs.
+## Dependencies
 
-🔌 Hardware Setup
-🧩 Components
+Declared in `platformio.ini` — PlatformIO fetches them automatically:
 
-ESP32-S3 (N16R8 recommended)
+```
+mrfaptastic/ESP32 HUB75 LED MATRIX PANEL DMA Display @ ^3.0.14
+adafruit/Adafruit GFX Library @ ^1.12.5
+```
 
-HUB75E P4 64×32 LED Matrix
+---
 
-5V Power Supply (≥ 3A recommended)
+## Build & Flash
 
-⚠️ GPIO Constraints (ESP32-S3)
+```bash
+# Build
+pio run
 
-Avoid these pins:
+# Flash
+pio run --target upload
 
-Type	Pins
-Strapping	0, 3, 45, 46
-Flash (QSPI)	6–11
-PSRAM (Octal)	35, 36, 37
-✅ GPIO Mapping Used
-Signal	GPIO
-R1	4
-G1	5
-B1	12
-R2	13
-G2	14
-B2	15
-A	38
-B	39
-C	40
-D	41
-E	42
-CLK	2
-LAT	1
-OE	16
-⚙️ Library
-
-ESP32-HUB75-MatrixPanel-I2S-DMA v3.x
-
-Driver mode:
-
-mxconfig.driver = HUB75_I2S_CFG::SHIFTREG;
-
-⚠️ Do NOT enable FM6126A / ICN2038S init sequences
-This panel uses plain shift-register logic.
-
-🧪 Test Suite
-
-The firmware cycles through 8 diagnostic modes:
-
-1. 🎨 Solid Colours
-
-Verifies full-panel fill
-
-Checks RGB channel integrity
-
-2. 🌈 Colour Bars
-
-Confirms horizontal mapping
-
-Detects column misalignment
-
-3. 🚶 Walking Pixel
-
-Pixel-by-pixel scan test
-
-Validates addressing + timing
-
-4. 📊 Gradient
-
-Tests color depth & PWM behavior
-
-Top: Red gradient
-
-Bottom: Blue gradient
-
-5. ♟️ Checkerboard
-
-High-frequency pixel toggling
-
-Detects ghosting / flicker
-
-6. 🔤 Scrolling Text
-
-Text rendering + DMA buffering
-
-Confirms font pipeline
-
-7. 📦 Border Test
-
-Edge alignment validation
-
-Corner pixel accuracy
-
-8. 🔆 Brightness Ramp
-
-Full 0–255 brightness sweep
-
-Validates OE + PWM control
-
-🚀 Getting Started
-PlatformIO (Recommended)
-[env:esp32s3]
-platform = espressif32
-board = esp32-s3-devkitc-1
-framework = arduino
-
-lib_deps =
-  ESP32-HUB75-MatrixPanel-I2S-DMA
-Upload
-pio run -t upload
-Serial Monitor
+# Monitor serial output
 pio device monitor
+```
 
-Expected output:
+Serial output is at **115 200 baud**. On first boot the ESP32-S3 USB CDC needs ~500 ms to settle before the first log line appears.
 
-=== HUB75E Test ESP32-S3-N16R8 ===
-Matrix init OK
-Virtual canvas 64x64  Physical rows 0-31
-⚠️ Power Considerations
+---
 
-Use 5V ≥ 3A supply
+## Test Sequence
 
-Do NOT power from USB alone
+The firmware loops through eight tests indefinitely:
 
-Connect GND (ESP32 ↔ Panel)
+| # | Test | What to look for |
+|---|---|---|
+| 1 | **Solid colours** | Full-panel fills: red, green, blue, white, yellow, cyan, magenta, black — with a contrasting label |
+| 2 | **Colour bars** | 8 vertical bars across the panel |
+| 3 | **Walking pixel** | Single white pixel traverses every pixel left-to-right, top-to-bottom |
+| 4 | **Gradient** | Horizontal ramp — red on the top half, blue on the bottom half |
+| 5 | **Checkerboard** | 4×4 pixel checker pattern, blinks 4 times |
+| 6 | **Scrolling text** | Green text scrolls right-to-left, vertically centred |
+| 7 | **Border / corners** | White outer rect, green inner rect, red corner pixels, yellow centre cross |
+| 8 | **Brightness ramp** | White fill ramps from 0 → 255 → 0, then resets to 50% |
 
-🐛 Troubleshooting
-❌ No display
+---
 
-Check HUB75 cable orientation
+## Timing Constants
 
-Verify OE / LAT / CLK wiring
+All durations are `#define`d at the top of `main.cpp` for easy adjustment:
 
-Confirm power supply
+| Constant | Default | Controls |
+|---|---|---|
+| `SOLID_DURATION` | 1500 ms | Time per solid colour |
+| `BARS_DURATION` | 2000 ms | Colour bars hold time |
+| `WALK_DELAY` | 4 ms | Delay between each walking pixel step |
+| `GRADIENT_DURATION` | 1500 ms | Gradient hold time |
+| `CHECKER_BLINKS` | 4 | Number of checkerboard blink cycles |
+| `SCROLL_PASSES` | 2 | Number of full scroll passes |
+| `BORDER_DURATION` | 2000 ms | Border test hold time |
+| `BRIGHTNESS_STEP_MS` | 10 ms | Delay between each brightness step |
 
-❌ Flickering / unstable image
+Scroll speed is set by the `delay()` value inside `testScrollText()` — higher value = slower scroll, lower value = faster scroll.
 
-Ensure stable 5V supply
+---
 
-Avoid bad GPIO pins
+## Troubleshooting
 
-Reduce brightness
+**Only the top half of the panel shows content, mirrored on the bottom half**
+The E pin is not being driven. Confirm `PANEL_HEIGHT = 64` in the config and that `mxconfig.gpio.e` is assigned to a valid GPIO.
 
-❌ Half panel glitching
+**Panel is blank / `matrix->begin()` fails**
+Check power supply (5 V, adequate current), verify all GPIO assignments, and confirm no strapping/reserved pins are used.
 
-Confirm E pin (GPIO42) connected
+**Corrupted colours or scan glitches**
+Try `mxconfig.driver = HUB75_I2S_CFG::SHIFTREG` if another driver is set. FM6126A/ICN2038S init sequences can corrupt standard shift-register panels.
 
-Ensure 64×64 virtual config
-
-❌ Random noise / corruption
-
-Wrong driver mode → use SHIFTREG
-
-Remove FM6126A init if enabled
-
-📌 Notes
-
-This firmware is intended for hardware validation, not production UI
-
-All rendering is clipped to REAL_HEIGHT (32) to avoid ghost rows
-
-DMA is used for high refresh and minimal CPU usage
+**GPIO 48 behaving unexpectedly**
+GPIO 48 drives the on-board RGB LED on many ESP32-S3-DevKitC-1 boards. Use GPIO 42 for the E pin instead.
